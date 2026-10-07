@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТЬМА • Экспорты</title>
+<style>
+  :root {
+    --bg: #09090b;
+    --card: #121216;
+    --card-2: #18181b;
+    --border: #27272a;
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --red: #dc2626;
+    --red-h: #b91c1c;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --glow: rgba(220,38,38,0.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body {
+    background: radial-gradient(circle at 15% 0%, #1a0508 0%, var(--bg) 55%);
+    color: var(--text); min-height: 100vh; padding: 20px;
+  }
+  .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--card), var(--card-2));
+    border: 1px solid var(--border); border-left: 4px solid var(--red);
+    border-radius: 12px;
+    box-shadow: 0 0 25px rgba(220,38,38,0.1);
+  }
+  h1 { font-size: 1.5rem; font-weight: 800; color: #ef4444; letter-spacing: -0.5px; text-shadow: 0 0 20px var(--glow); }
+  h1 span { display: block; font-size: 0.7rem; color: var(--muted); font-weight: 400; letter-spacing: 2px; margin-top: 2px; }
+  header .status { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+  header .status b { color: var(--green); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .card h2 { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.5px; }
+
+  label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+  input[type="text"], textarea, select {
+    background: var(--card-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-size: 0.9rem; outline: none; width: 100%;
+    transition: border-color 0.15s;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--red); box-shadow: 0 0 12px rgba(220,38,38,0.15); }
+  textarea { resize: vertical; min-height: 280px; line-height: 1.5; }
+  select { font-family: inherit; cursor: pointer; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 180px; }
+
+  button {
+    font-family: inherit; font-weight: 700; cursor: pointer;
+    padding: 10px 16px; border-radius: 8px;
+    font-size: 0.88rem; border: none; transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--red), var(--red-h)); color: #fff; }
+  .btn-primary:hover { box-shadow: 0 0 20px var(--glow); }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-secondary:hover { background: #3f3f46; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--red); color: var(--red); background: rgba(220,38,38,0.08); }
+  .btn-danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+  .btn-danger:hover { background: #ef4444; color: #fff; }
+  .btn-sm { padding: 6px 11px; font-size: 0.78rem; }
+  button:active { transform: scale(0.98); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .hint {
+    font-size: 0.75rem; color: var(--muted);
+    padding: 8px 12px; background: rgba(220,38,38,0.06);
+    border-left: 3px solid var(--red); border-radius: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hint .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+  }
+  .hint .dot.saving { background: var(--yellow); }
+  .hint .dot.dirty { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  /* Editor header badge — что редактируется */
+  .editing-badge {
+    display: none; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px;
+    background: rgba(220,38,38,0.1);
+    border: 1px solid rgba(220,38,38,0.4);
+    font-size: 0.82rem;
+  }
+  .editing-badge.show { display: flex; }
+  .editing-badge b { color: var(--red); }
+
+  .file-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+  .item {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 9px; padding: 12px 14px;
+    display: flex; gap: 12px; align-items: center;
+    transition: all 0.15s;
+  }
+  .item:hover { border-color: #3f3f46; background: rgba(255,255,255,0.035); }
+  .item.editing {
+    border-color: var(--red);
+    background: rgba(220,38,38,0.06);
+    box-shadow: 0 0 0 1px var(--red) inset;
+  }
+  .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .item-name { font-weight: 700; font-size: 0.92rem; word-break: break-word; }
+  .item-name .tag {
+    display: inline-block; font-size: 0.65rem; padding: 2px 7px;
+    border-radius: 10px; background: rgba(220,38,38,0.15);
+    color: var(--red); margin-left: 6px; letter-spacing: 0.5px;
+    vertical-align: middle;
+  }
+  .item-meta { font-size: 0.72rem; color: var(--muted); }
+  .item-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+
+  .empty {
+    text-align: center; color: var(--muted);
+    padding: 30px 20px; font-size: 0.9rem;
+  }
+  .empty b { display: block; font-size: 40px; opacity: 0.3; margin-bottom: 8px; }
+
+  /* Модалка */
+  .modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.82); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center;
+    z-index: 1000; padding: 20px;
+  }
+  .modal.active { display: flex; }
+  .modal-box {
+    background: linear-gradient(160deg, var(--card), var(--bg));
+    border: 1px solid var(--border); border-top: 3px solid var(--red);
+    border-radius: 14px; padding: 24px;
+    width: 100%; max-width: 440px;
+    display: flex; flex-direction: column; gap: 14px;
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  .modal-box h2 { color: var(--red); font-size: 1.05rem; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+  .modal-box .modal-text { font-size: 0.9rem; color: var(--text); line-height: 1.5; word-break: break-word; }
+  .modal-box .modal-text b { color: var(--red); }
+  .modal-box .modal-buttons {
+    display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 6px;
+  }
+
+  /* Toast */
+  #toast-container {
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; flex-direction: column; gap: 10px; z-index: 9999;
+    max-width: 340px;
+  }
+  .toast {
+    background: var(--card); border: 1px solid var(--border);
+    border-left: 4px solid var(--red);
+    color: var(--text); padding: 12px 16px; border-radius: 8px;
+    font-size: 0.85rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    animation: slideIn 0.25s ease, fadeOut 0.3s ease 2.7s forwards;
+    word-break: break-word;
+  }
+  .toast.success { border-left-color: var(--green); }
+  .toast.error { border-left-color: #ef4444; }
+  @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes fadeOut { to { opacity: 0; visibility: hidden; transform: translateX(120%); } }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--red); }
+
+  @media (max-width: 600px) {
+    .item { flex-direction: column; align-items: stretch; }
+    .item-actions { justify-content: flex-end; }
+    .item-actions button { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>ТЬМА <span>сохранение и редактирование</span></h1>
+    <div class="status" id="fsStatus"></div>
+  </header>
+
+  <!-- РЕДАКТОР -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <h2 id="editorTitle">📝 Новый экспорт</h2>
+      <div class="editing-badge" id="editingBadge">
+        <span>✏️ Редактируется:</span>
+        <b id="editingName"></b>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Имя файла</label>
+        <input type="text" id="fileName" placeholder="branches_2026-10-07">
+      </div>
+      <div class="field">
+        <label>Формат</label>
+        <select id="fileFormat">
+          <option value="json">JSON</option>
+          <option value="txt">TXT</option>
+          <option value="md">Markdown</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Содержимое</label>
+      <textarea id="content" placeholder='{"departments": {...}}'></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="saveBtn" onclick="saveCurrent()">💾 Сохранить в файл</button>
+      <button class="btn-secondary" onclick="downloadFile()">⬇️ Скачать в «Загрузки»</button>
+      <button class="btn-secondary" id="updateBtn" onclick="updateExisting()" style="display:none;">💾 Обновить запись</button>
+      <button class="btn-ghost" onclick="document.getElementById('loadInput').click()">📂 Загрузить файл</button>
+      <button class="btn-ghost" onclick="formatJSON()">✨ Форматировать JSON</button>
+      <button class="btn-ghost" onclick="validateJSON()">✓ Проверить JSON</button>
+      <button class="btn-danger" onclick="clearEditor()">✕ Очистить</button>
+      <input type="file" id="loadInput" hidden onchange="loadFile(event)" accept=".json,.txt,.md,.csv">
+    </div>
+
+    <div class="hint" id="statusHint">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Готово к работе</span>
+    </div>
+  </div>
+
+  <!-- ИСТОРИЯ -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
+      <h2>🗂 Сохранённые в браузере <span id="historyCount" style="color:var(--muted);font-weight:400;"></span></h2>
+      <button class="btn-danger btn-sm" onclick="clearHistory()">🗑 Очистить историю</button>
+    </div>
+    <div class="file-list" id="historyList"></div>
+  </div>
+</div>
+
+<!-- ПОДТВЕРЖДЕНИЕ -->
+<div class="modal" id="confirmModal">
+  <div class="modal-box">
+    <h2>⚠️ ПОДТВЕРЖДЕНИЕ</h2>
+    <div class="modal-text" id="confirmText">Вы уверены?</div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="confirmCancelBtn">Отмена</button>
+      <button class="btn-danger" id="confirmOkBtn">🗑 Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+/* ============ КОНСТАНТЫ ============ */
+const STORAGE_KEY = 'tma_exports_v1';
+const DRAFT_KEY   = 'tma_draft_v1';
+const supportsFS = 'showSaveFilePicker' in window;
+
+let history = [];
+let editingId = null;      // id записи, которую редактируем (null = новая)
+let draftTimer = null;
+
+/* ============ УТИЛИТЫ ============ */
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function formatBytes(b) {
+  if (!b) return '0 Б';
+  const k = 1024, s = ['Б','КБ','МБ','ГБ'];
+  const i = Math.floor(Math.log(b) / Math.log(k));
+  return (b / Math.pow(k, i)).toFixed(1) + ' ' + s[i];
+}
+
+function nowStr() {
+  return new Date().toLocaleString('ru-RU');
+}
+
+function tsFile() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
+}
+
+function toast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+/* ============ СТАТУС В HINT ============ */
+function setStatus(text, mode = 'ok') {
+  const dot = document.getElementById('statusDot');
+  const t = document.getElementById('statusText');
+  dot.className = 'dot' + (mode === 'dirty' ? ' dirty' : mode === 'saving' ? ' saving' : '');
+  t.textContent = text;
+}
+
+/* ============ ПОДТВЕРЖДЕНИЕ ============ */
+function confirmAction(message, options = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirmModal');
+    const text  = document.getElementById('confirmText');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+
+    text.innerHTML = message;
+    okBtn.textContent = options.okText || '🗑 Удалить';
+    cancelBtn.textContent = options.cancelText || 'Отмена';
+    okBtn.className = options.danger === false ? 'btn-primary' : 'btn-danger';
+
+    modal.classList.add('active');
+
+    const cleanup = () => {
+      modal.classList.remove('active');
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      modal.onclick = null;
+      document.removeEventListener('keydown', onKey);
+    };
+    const onKey = e => {
+      if (e.key === 'Escape') { cleanup(); resolve(false); }
+      if (e.key === 'Enter')  { cleanup(); resolve(true); }
+    };
+    okBtn.onclick = () => { cleanup(); resolve(true); };
+    cancelBtn.onclick = () => { cleanup(); resolve(false); };
+    modal.onclick = e => { if (e.target === modal) { cleanup(); resolve(false); } };
+    document.addEventListener('keydown', onKey);
+    setTimeout(() => cancelBtn.focus(), 60);
+  });
+}
+
+/* ============ ИСТОРИЯ (localStorage) ============ */
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    history = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(history)) history = [];
+  } catch { history = []; }
+}
+
+function saveHistory() {
+  try {
+    let trimmed = history.slice(0, 30);
+    let total = JSON.stringify(trimmed).length;
+    while (total > 4 * 1024 * 1024 && trimmed.length > 1) {
+      trimmed.pop();
+      total = JSON.stringify(trimmed).length;
+    }
+    history = trimmed;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('localStorage overflow', e);
+    toast('История переполнена — старые удалены', 'error');
+  }
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  document.getElementById('historyCount').textContent = history.length ? `(${history.length})` : '';
+
+  if (history.length === 0) {
+    list.innerHTML = '<div class="empty"><b>📭</b>Пока ничего не сохранялось</div>';
+    return;
+  }
+
+  list.innerHTML = history.map((h, i) => {
+    const isEditing = editingId === h.id;
+    return `
+      <div class="item ${isEditing ? 'editing' : ''}">
+        <div class="item-info">
+          <div class="item-name">
+            ${escapeHtml(h.name)}.${h.format}
+            ${isEditing ? '<span class="tag">✏️ РЕДАКТИРУЕТСЯ</span>' : ''}
+          </div>
+          <div class="item-meta">${formatBytes(h.size)} · ${escapeHtml(h.date)}</div>
+        </div>
+        <div class="item-actions">
+          <button class="btn-secondary btn-sm" onclick="openInEditor(${i})">✎ Редактировать</button>
+          <button class="btn-primary btn-sm" onclick="saveFromHistory(${i})">💾 В файл</button>
+          <button class="btn-ghost btn-sm" onclick="duplicateHistory(${i})" title="Дублировать">⧉</button>
+          <button class="btn-danger btn-sm" onclick="removeHistory(${i})" title="Удалить">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============ РЕДАКТИРОВАНИЕ ============ */
+function openInEditor(i) {
+  const h = history[i];
+  if (!h) return;
+
+  editingId = h.id;
+  document.getElementById('fileName').value = h.name;
+  document.getElementById('fileFormat').value = h.format;
+  document.getElementById('content').value = h.content;
+
+  // Обновляем UI
+  document.getElementById('editorTitle').textContent = '✏️ Редактирование';
+  document.getElementById('editingBadge').classList.add('show');
+  document.getElementById('editingName').textContent = `${h.name}.${h.format}`;
+  document.getElementById('updateBtn').style.display = 'inline-flex';
+  document.getElementById('saveBtn').textContent = '💾 Сохранить как...';
+
+  renderHistory();
+  setStatus('Редактируется: ' + h.name + '.' + h.format, 'ok');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function exitEditMode() {
+  editingId = null;
+  document.getElementById('editorTitle').textContent = '📝 Новый экспорт';
+  document.getElementById('editingBadge').classList.remove('show');
+  document.getElementById('updateBtn').style.display = 'none';
+  document.getElementById('saveBtn').textContent = '💾 Сохранить в файл';
+  renderHistory();
+}
+
+/* Обновление существующей записи без создания новой */
+async function updateExisting() {
+  if (!editingId) { toast('Нет активной записи для обновления', 'error'); return; }
+  const idx = history.findIndex(h => h.id === editingId);
+  if (idx < 0) { toast('Запись не найдена', 'error'); exitEditMode(); return; }
+
+  const name = (document.getElementById('fileName').value.trim() || 'export').replace(/[\\/:*?"<>|]/g, '_');
+  const format = document.getElementById('fileFormat').value;
+  const content = document.getElementById('content').value;
+
+  if (!content.trim()) { toast('Пустое содержимое', 'error'); return; }
+
+  history[idx] = {
+    ...history[idx],
+    name, format, content,
+    size: new Blob([content]).size,
+    date: nowStr(),
+    updatedAt: Date.now()
+  };
+  saveHistory();
+  renderHistory();
+  setStatus('Обновлено: ' + name + '.' + format, 'ok');
+  toast('✓ Запись обновлена', 'success');
+}
+
+function duplicateHistory(i) {
+  const h = history[i];
+  if (!h) return;
+  const copy = {
+    ...h,
+    id: uid(),
+    name: h.name + '_копия',
+    date: nowStr(),
+    ts: Date.now()
+  };
+  history.unshift(copy);
+  saveHistory();
+  renderHistory();
+  toast('⧉ Дубликат создан', 'success');
+}
+
+function uid() { return 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* ============ УДАЛЕНИЕ С ПОДТВЕРЖДЕНИЕМ ============ */
+async function removeHistory(i) {
+  const h = history[i];
+  if (!h) return;
+
+  const ok = await confirmAction(
+    `Удалить запись из истории?<br><br><b>${escapeHtml(h.name)}.${h.format}</b><br><span style="font-size:0.8rem;color:var(--muted);">${formatBytes(h.size)} · ${escapeHtml(h.date)}</span>`,
+    { okText: '🗑 Удалить', cancelText: 'Отмена' }
+  );
+  if (!ok) { toast('Удаление отменено'); return; }
+
+  if (editingId === h.id) exitEditMode();
+  history.splice(i, 1);
+  saveHistory();
+  renderHistory();
+  toast('Удалено из истории', 'success');
+}
+
+async function clearHistory() {
+  if (history.length === 0) { toast('История уже пуста'); return; }
+
+  const ok = await confirmAction(
+    `Удалить <b>всю</b> историю?<br><br>Будет удалено записей: <b>${history.length}</b><br><span style="font-size:0.8rem;color:var(--muted);">Это действие нельзя отменить</span>`,
+    { okText: '🗑 Удалить всё', cancelText: 'Отмена' }
+  );
+  if (!ok) { toast('Очистка отменена'); return; }
+
+  history = [];
+  exitEditMode();
+  saveHistory();
+  renderHistory();
+  toast('История очищена', 'success');
+}
+
+/* ============ ОЧИСТКА РЕДАКТОРА ============ */
+async function clearEditor() {
+  const content = document.getElementById('content').value;
+  const fileName = document.getElementById('fileName').value;
+
+  if (!content.trim() && !fileName.trim() && !editingId) {
+    toast('Нечего очищать');
+    return;
+  }
+
+  const ok = await confirmAction(
+    `Очистить редактор?<br><br><span style="font-size:0.8rem;color:var(--muted);">Несохранённые данные будут потеряны${editingId ? '<br>Режим редактирования будет сброшен' : ''}</span>`,
+    { okText: '✕ Очистить', cancelText: 'Отмена' }
+  );
+  if (!ok) { toast('Отменено'); return; }
+
+  document.getElementById('content').value = '';
+  document.getElementById('fileName').value = 'export_' + tsFile();
+  document.getElementById('fileFormat').value = 'json';
+  exitEditMode();
+  clearDraft();
+  setStatus('Редактор очищен');
+  toast('Редактор очищен');
+}
+
+/* ============ СОХРАНЕНИЕ В ФАЙЛ ============ */
+function saveCurrent() {
+  if (editingId) {
+    saveAs(); // редактируем существующее → сохранить как файл
+  } else {
+    saveAs();
+  }
+}
+
+async function saveAs() {
+  const name = (document.getElementById('fileName').value.trim() || 'export').replace(/[\\/:*?"<>|]/g, '_');
+  const format = document.getElementById('fileFormat').value;
+  const content = document.getElementById('content').value;
+
+  if (!content.trim()) { toast('Вставьте данные для сохранения', 'error'); return; }
+
+  const filename = `${name}.${format}`;
+  const mime = format === 'json' ? 'application/json;charset=utf-8'
+             : format === 'md'   ? 'text/markdown;charset=utf-8'
+             : 'text/plain;charset=utf-8';
+
+  if (supportsFS) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: format.toUpperCase() + ' файл',
+          accept: { [mime.split(';')[0]]: ['.' + format] }
+        }]
+      });
+      const w = await handle.createWritable();
+      await w.write(content);
+      await w.close();
+
+      addToHistory(name, format, content);
+      toast(`✓ Сохранено: ${handle.name}`, 'success');
+      setStatus('Сохранено в файл: ' + handle.name);
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('FS API error:', err);
+    }
+  }
+
+  downloadFile(true);
+}
+
+function downloadFile(silent = false) {
+  const name = (document.getElementById('fileName').value.trim() || 'export').replace(/[\\/:*?"<>|]/g, '_');
+  const format = document.getElementById('fileFormat').value;
+  const content = document.getElementById('content').value;
+
+  if (!content.trim()) { toast('Вставьте данные для сохранения', 'error'); return; }
+
+  const filename = `${name}.${format}`;
+  const mime = format === 'json' ? 'application/json;charset=utf-8'
+             : format === 'md'   ? 'text/markdown;charset=utf-8'
+             : 'text/plain;charset=utf-8';
+
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+  addToHistory(name, format, content);
+  toast(`✓ Скачано: ${filename}`, 'success');
+  setStatus('Скачано: ' + filename);
+}
+
+function saveFromHistory(i) {
+  const h = history[i];
+  if (!h) return;
+  document.getElementById('fileName').value = h.name;
+  document.getElementById('fileFormat').value = h.format;
+  document.getElementById('content').value = h.content;
+  saveAs();
+}
+
+function addToHistory(name, format, content) {
+  const id = editingId || uid();
+  const existingIdx = history.findIndex(h => h.id === id);
+  const entry = {
+    id,
+    name, format, content,
+    size: new Blob([content]).size,
+    date: nowStr(),
+    ts: existingIdx >= 0 ? history[existingIdx].ts : Date.now(),
+    updatedAt: Date.now()
+  };
+  if (existingIdx >= 0) {
+    history.splice(existingIdx, 1);
+  } else {
+    // ищем по совпадению имени+формата
+    const dup = history.findIndex(h => h.name === name && h.format === format);
+    if (dup >= 0) history.splice(dup, 1);
+  }
+  history.unshift(entry);
+  saveHistory();
+  renderHistory();
+}
+
+/* ============ ЗАГРУЗКА ФАЙЛА ============ */
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const text = ev.target.result;
+    const parts = file.name.split('.');
+    const ext = parts.length > 1 ? parts.pop() : 'json';
+    const baseName = parts.join('.');
+
+    document.getElementById('content').value = text;
+    document.getElementById('fileName').value = baseName;
+    if (['json','txt','md'].includes(ext)) {
+      document.getElementById('fileFormat').value = ext;
+    }
+    exitEditMode();
+    setStatus('Загружено: ' + file.name, 'dirty');
+    toast(`✓ Загружено: ${file.name}`, 'success');
+  };
+  reader.onerror = () => toast('Ошибка чтения файла', 'error');
+  reader.readAsText(file, 'utf-8');
+  event.target.value = '';
+}
+
+/* ============ УТИЛИТЫ JSON ============ */
+function formatJSON() {
+  const content = document.getElementById('content').value;
+  if (!content.trim()) { toast('Пусто', 'error'); return; }
+  try {
+    const parsed = JSON.parse(content);
+    document.getElementById('content').value = JSON.stringify(parsed, null, 2);
+    document.getElementById('fileFormat').value = 'json';
+    toast('✓ JSON отформатирован', 'success');
+    setStatus('JSON отформатирован', 'dirty');
+  } catch (e) {
+    toast('Невалидный JSON: ' + e.message, 'error');
+    setStatus('Ошибка JSON: ' + e.message, 'dirty');
+  }
+}
+
+function validateJSON() {
+  const content = document.getElementById('content').value;
+  if (!content.trim()) { toast('Пусто', 'error'); return; }
+  try {
+    const parsed = JSON.parse(content);
+    const size = new Blob([content]).size;
+    toast(`✓ JSON валиден (${formatBytes(size)})`, 'success');
+    setStatus('JSON валиден', 'ok');
+  } catch (e) {
+    toast('❌ Ошибка: ' + e.message, 'error');
+    setStatus('Ошибка: ' + e.message, 'dirty');
+  }
+}
+
+/* ============ ЧЕРНОВИК (автосохранение) ============ */
+function saveDraft() {
+  try {
+    const draft = {
+      name: document.getElementById('fileName').value,
+      format: document.getElementById('fileFormat').value,
+      content: document.getElementById('content').value,
+      editingId,
+      ts: Date.now()
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch (e) { /* ignore */ }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d || (!d.content && !d.name)) return false;
+
+    // если есть несохранённые данные — восстановим
+    const age = Date.now() - (d.ts || 0);
+    if (age > 1000 * 60 * 60 * 24 * 7) { // старше 7 дней — игнорируем
+      localStorage.removeItem(DRAFT_KEY);
+      return false;
+    }
+
+    document.getElementById('fileName').value = d.name || '';
+    document.getElementById('fileFormat').value = d.format || 'json';
+    document.getElementById('content').value = d.content || '';
+    if (d.editingId) {
+      const idx = history.findIndex(h => h.id === d.editingId);
+      if (idx >= 0) openInEditor(idx);
+    }
+    setStatus('Восстановлен черновик от ' + new Date(d.ts).toLocaleString('ru-RU'), 'dirty');
+    return true;
+  } catch { return false; }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+/* Автосохранение при вводе */
+['fileName','fileFormat','content'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    setStatus('Изменено — не сохранено', 'dirty');
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraft, 500);
+  });
+  document.getElementById(id).addEventListener('change', () => {
+    setStatus('Изменено — не сохранено', 'dirty');
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraft, 500);
+  });
+});
+
+/* ============ СТАРТ ============ */
+loadHistory();
+renderHistory();
+
+document.getElementById('fsStatus').innerHTML = supportsFS
+  ? '<b>✅ Выбор папки доступен</b>'
+  : '<b>⚠️ Файлы скачиваются в «Загрузки»</b>';
+document.getElementById('fsStatus').querySelector('b').style.color = supportsFS ? 'var(--green)' : '#f59e0b';
+
+if (!loadDraft()) {
+  document.getElementById('fileName').value = 'export_' + tsFile();
+  setStatus('Готово к работе');
+}
+
+/* Ctrl+S — сохранить */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    if (editingId) {
+      // Если редактируем — предпочтительно обновить запись
+      if (e.shiftKey) updateExisting();
+      else saveAs();
+    } else {
+      saveAs();
+    }
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+    // Ctrl+D — выход из режима редактирования
+    if (editingId) {
+      e.preventDefault();
+      exitEditMode();
+      toast('Режим редактирования завершён');
+    }
+  }
+});
+
+/* Предупреждение при уходе */
+window.addEventListener('beforeunload', e => {
+  const content = document.getElementById('content').value;
+  if (content.trim()) {
+    // черновик уже сохранён — просто напоминаем
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+</script>
+</body>
+</html>
